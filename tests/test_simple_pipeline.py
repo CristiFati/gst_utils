@@ -5,13 +5,14 @@ import time
 
 import gi
 
+from tests.common import test_main
 from gst_utils.pipeline_parser import PipelineParser
 
 gi.require_version("Gst", "1.0")
 from gi.repository import GLib, Gst
 
 
-def create_pipeline(pipeline):
+def create_dummy_pipeline():
     elements = []
     videotest0 = Gst.ElementFactory.make("videotestsrc")
     videotest0.set_property("pattern", 18)
@@ -38,7 +39,13 @@ def create_pipeline(pipeline):
             if not e:
                 print(i, end=", ")
         print()
-        return False
+        return
+
+    pipeline = Gst.Pipeline()
+    if not pipeline:
+        print("No pipeline")
+        return
+
     for e in elements:
         pipeline.add(e)
 
@@ -52,35 +59,16 @@ def create_pipeline(pipeline):
     )
     if not all(links):
         print(f"Link failures: {links}")
-        return False
-    return True
+        return
+    return pipeline
 
 
 def main(*argv):
     Gst.init(None)
-    pipeline = Gst.Pipeline()
+    pipeline = create_dummy_pipeline()
     if not pipeline:
-        print("No pipeline")
         return -1
-    res = create_pipeline(pipeline)
-    if not res:
-        print("No pipeline elements")
-        return -1
-    start_time = time.time()
-    loop = GLib.MainLoop()
-    pipeline.set_state(Gst.State.PLAYING)
-    try:
-        loop.run()
-        pass
-    except Exception as e:
-        print(e)
-    except KeyboardInterrupt:
-        print("<Ctrl + C> pressed")
-    finally:
-        pipeline.set_state(Gst.State.NULL)
-        loop.quit()
-        print(f"--- Ran for {time.time() - start_time:.3f} seconds")
-
+    test_main(pipeline)
     pp = PipelineParser()
     print(f"\nGST Launch equivalent:\n{pp.gst_launch(pipeline)}")
 
